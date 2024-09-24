@@ -50,18 +50,25 @@ y_pred = []
 # 切换模型到评估模式
 model.eval()
 
+threshold = 0.2
 # 从 DataLoader 中提取测试数据
+predictions = []
+true_values = []
 with torch.no_grad():
     for data, labels in test_loader:
         data = data.to(device)
         labels = labels.to(device)
 
         # 模型预测
-        outputs = model(data).cpu().numpy()
-        predictions = (outputs > 0.2).astype(int)  # 阈值设定为0.5，1表示异常，0表示正常
-
-        y_pred.extend(predictions)  # 模型预测标签
-        y_test.extend(labels.cpu().numpy())  # 真实标签
+        outputs = model(data)
+        predictions.extend(outputs.squeeze().cpu().numpy())
+        true_values.extend(labels.cpu().numpy())
+    predictions = np.array(predictions)
+    true_values = np.array(true_values)
+    binary_predictions = (np.abs(predictions - true_values) > threshold).astype(int)  # 0: normal, 1: anomaly
+    binary_true_values = true_values.astype(int)  # Based on true class (0/1)
+    y_pred.extend(binary_predictions)  # 模型预测标签
+    y_test.extend(binary_true_values)  # 真实标签
 
 y_test = np.array(y_test)
 y_pred = np.array(y_pred)
